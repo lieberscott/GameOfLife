@@ -1,0 +1,320 @@
+// React & Redux libraries setup
+const { Component } = React;
+const { createStore } = Redux;
+const { Provider } = ReactRedux;
+const { connect } = ReactRedux;
+const { combineReducers } = Redux;
+
+let width = 100;
+let height = 80;
+
+/*
+*
+***************
+*
+* SETUP
+*
+***************
+*
+*/
+
+const newGrid = () => { // called when page first loads (and if user clicks for a new Array)
+  let grid = [];
+  for (let i = 0; i < height; i++) {
+    grid.push([]);
+    for (let j = 0; j < width; j++) {
+      let alive = Math.random() > 0.85;
+      let newborn;
+      if (alive) { newborn = true}
+      else { newborn = false }
+      grid[i][j] = {
+        alive: alive,
+        newborn: newborn // for refresh, ensure first gen is light blue
+      };
+    }
+  }
+  return grid;
+}
+
+const initBoardState = () => { // made this into a function
+  return {
+    arr: newGrid(),
+    generation: 1
+  }
+};
+
+
+const boardReducer = (state = initBoardState(), action) => {
+  let newState;
+  switch (action.type) {
+    case "NEW_ARR":
+      newState = {
+        arr: action.arr,
+        generation: state.generation + 1
+      };
+      return newState;
+      break;
+      
+    case "TOG_ALIVE":
+      let tempArr = action.arr;
+      tempArr[action.i][action.j] = {
+        alive: !tempArr[action.i][action.j].alive,
+        newborn: true
+      };
+      newState = {
+        ...state,
+        arr: tempArr
+      };
+      return newState;
+      break;
+      
+    case "CLEAR_ARR":
+      newState = {
+        ...state,
+        arr: action.arr
+      };
+      return newState;
+      break;
+      
+    case "REFRESH":
+      newState = {
+        arr: action.arr,
+        generation: 1
+      };
+      return newState;
+      break;
+    
+    default:
+      return state;
+      break;
+  }
+}
+
+const store = createStore(boardReducer);
+
+/*
+*
+***************
+*
+* FUNCTIONS CALLED PRIOR TO DISPATCHED ACTIONS
+*
+***************
+*
+*/
+
+const newBoard = (arr) => { // called as the game is being played
+  let newArr = [];
+  for (let i = 0; i < height; i++) {
+    newArr.push([]);
+    for (let j = 0; j < width; j++) {
+      let score = checkNeighbors(arr, i, j); // checkNeighbors to see if cell lives or dies
+      if (arr[i][j].alive == false && score == 3) {
+        newArr[i].push({ alive: true, newborn: true });
+      }
+      else if (arr[i][j].alive == true && (score > 3 || score < 2)) {
+        newArr[i].push({ alive: false, newborn: false });
+      }
+      else {
+        newArr[i].push({ alive: arr[i][j].alive, newborn: false });
+      }
+    }
+  }
+  return newArr;
+}
+
+const checkNeighbors = (array, x, y) => { // only called within the newBoard function
+  let score = 0;
+  for (let i = -1; i <= 1; i++) {
+    let h = (i + x + height) % height;
+    for (let j = -1; j <= 1; j++) {
+      let w = (j + y + width) % width;
+      score += array[h][w].alive;
+    }
+  }
+  score -= array[x][y].alive;
+  return score;
+}
+
+const clearArr = (array) => { // called when user clicks trash button
+  for (let i = 0; i < height; i++) {
+    for (let j = 0; j < width; j++) {
+      array[i][j] = {
+        alive: false,
+        newborn: false
+      }
+    }
+  }
+  return array;
+}
+
+
+/*
+*
+***************
+*
+* COMPONENTS: CELL, TOP, APP
+*
+***************
+*
+*/
+
+const Cell = (props) => {
+  return (
+    <td className={props.cell.alive ? props.cell.newborn ? "newborn" : "alive" : ""} onClick={props.toggleAlive}>
+    </td>
+  );
+}
+
+const Top = (props) => {
+  return (
+    <div className="top">
+      <span className="gen-title">Generation: <span className="number">{props.generation}</span></span>
+      <span className="title"><a href="https://www.youtube.com/watch?v=E8kUJL04ELA" target="_blank">Conway's Game of Life in React.js</a></span>
+      <span className="controls" onClick={props.play}><i className="fas fa-play"></i></span>
+      <span className="controls" onClick={props.step}><i className="fas fa-step-forward"></i></span>
+      <span className="controls" onClick={props.pause}><i className="fas fa-pause"></i></span>
+      <span className="controls" onClick={props.refresh}><i className="fas fa-random"></i></span>
+      <span className="controls" onClick={props.clearArray}><i className="fas fa-trash"></i></span>
+      </div>
+  );
+}
+
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      running: true, // to ensure setInterval() isn't called more than once
+      toggle: null // variable to be set to setInterval() so that when user clicks pause, clearInterval() can be called
+    };
+    this.play = this.play.bind(this);
+    this.pause = this.pause.bind(this);
+    this.step = this.step.bind(this);
+    this.clearArray = this.clearArray.bind(this);
+  }
+  
+  componentDidMount() {
+    let toggle = setInterval(() => this.props.newGeneration(this.props.data.arr), 80);
+    this.setState({ // sets toggle: toggle
+      toggle
+    });
+  }
+  
+  play() {
+    if (!this.state.running) {
+      let toggle = setInterval(() => this.props.newGeneration(this.props.data.arr), 80);
+      this.setState({
+        running: true,
+        toggle
+      });
+    }
+  }
+  
+  pause() {
+    if (this.state.running) {
+      clearInterval(this.state.toggle);
+      this.setState({
+        running: false
+      });
+    }
+  }
+  
+  step() {
+    if (!this.state.running) {
+      setTimeout(() => this.props.newGeneration(this.props.data.arr), 80)
+    }
+  }
+  
+  clearArray() {
+    clearInterval(this.state.toggle);
+      this.setState({
+        running: false
+      });
+    this.props.clear(this.props.data.arr);
+  }
+  
+  render() {    
+    return (
+      <div>
+        <div className="wrapper">
+          <Top generation={this.props.data.generation} play={this.play} pause={this.pause} step={this.step} clearArray={this.clearArray} refresh={() => this.props.refresh()}/>
+          <table>
+            <tbody>{this.props.data.arr.map((row, i) =>
+              <tr key={i}> {row.map((cell, j) =>
+                <Cell key={j} cell={cell} toggleAlive={() => this.props.toggleAlive(this.props.data.arr, i, j)}/>)}
+              </tr> )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+}
+
+
+const mapStateToProps = (state) => {
+  return {
+    data: state
+  };
+};
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    newGeneration: (array) => { // when play or step forward is pressed
+      let arr1 = array.slice(0);
+      let newArr = newBoard(arr1);
+      dispatch(newGeneration(newArr));
+    },
+    toggleAlive: (array, i, j) => { // when a cell is clicked
+      dispatch(toggleAlive(array, i, j));
+    },
+    clear: (array) => { // when trash icon is clicked
+      let clearedArr = clearArr(array);
+      dispatch(clear(clearedArr));
+    },
+    refresh: () => { // when the randomize button is pressed
+      let refreshedArr = newGrid();
+      dispatch(refresh(refreshedArr));
+    }
+  };
+}
+
+function newGeneration(arr) {
+  return {
+    type: "NEW_ARR",
+    arr: arr
+  };
+}
+
+function toggleAlive(arr, i, j) {
+  return {
+    type: "TOG_ALIVE",
+    arr: arr,
+    i: i,
+    j: j
+  };
+}
+
+function clear(clearedArr) {
+  return {
+    type: "CLEAR_ARR",
+    arr: clearedArr
+  };
+}
+
+function refresh(arr) {
+  return {
+    type: "REFRESH",
+    arr: arr
+  };
+}
+
+App = connect(mapStateToProps, mapDispatchToProps)(App);
+
+const main = window.document.getElementById("main");
+
+// Provider wraps our app
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+    main);

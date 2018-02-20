@@ -1,0 +1,78 @@
+body {
+  background: #2a3132;
+  font-family: 'Mukta Mahee', sans-serif;
+}
+
+a {
+  color: pink;
+  text-decoration: none;
+}
+a:hover {
+  font-weight: bold;
+}
+
+table {
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+tr td {
+  background: white;
+  border: 1px solid pink;
+  height: 10px;
+  width: 10px;
+}
+
+.alive {
+  background: #2a3132;
+}
+
+.controls {
+  cursor: pointer;
+  display: inline-block;
+  font-size: 19px;
+  left: 105px;
+  /* Control buttons are not on top of each other (even though they are all offset left the same amount) because their position is "relative", thus they push each other off to the right. This is probably hackey though, and not the slickest solution for the look I want, although it does work */
+  position: relative;
+  transition: 'font-size' 0.2s linear;
+  text-align: center;
+  width: 45px;
+}
+.controls:hover {
+  color: yellow;
+  font-size: 20px;
+}
+
+.gen-title {
+  display: inline-block;
+  margin-left: 10px;
+  width: 350px;
+}
+
+.newborn {
+  background: #90afc5;
+}
+
+.number {
+  font-size: 20px;
+}
+
+.title {
+  display: inline-block;
+  font-size: 22px;
+  text-align: center;
+  width: 350px;
+}
+
+.top {
+  height: 42px;
+  margin-top: 20px;
+}
+
+.wrapper {
+  color: pink;
+  margin: 0 auto;
+  padding: 5px 20px 20px 20px;
+  width: 1050px;
+  height: 1000px;
+}
